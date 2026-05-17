@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const routes = require('./routes');
+const { authOptional } = require('./middleware/auth');
 
 const app = express();
 
@@ -12,9 +13,14 @@ app.use(
 );
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(authOptional);
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'heart-haven-api' });
+  res.json({
+    ok: true,
+    service: 'heart-haven-api',
+    modules: ['vents', 'no-contact', 'support', 'resources', 'funding'],
+  });
 });
 
 app.use('/api', routes);
