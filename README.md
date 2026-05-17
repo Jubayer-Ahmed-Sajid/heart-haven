@@ -45,3 +45,9 @@ Copy the example files:
 
 ## Deployment
 See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for Vercel + Render/Railway setup, MongoDB Atlas guidance, and smoke tests.
+
+## One-time seed
+After MongoDB is connected, seed starter content with:
+```bash
+npm run seed --prefix backend
+```
