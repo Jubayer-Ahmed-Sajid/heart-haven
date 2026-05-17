@@ -2,8 +2,13 @@ const SupportRepository = require('../repositories/support.repository');
 
 async function createConversation(req, res, next) {
   try {
-    const conversation = await SupportRepository.createConversation({
-      roomKey: req.body.roomKey,
+    const roomKey = String(req.body.roomKey || '').trim();
+    if (!roomKey) {
+      return res.status(400).json({ message: 'roomKey is required' });
+    }
+
+    const conversation = await SupportRepository.findOrCreateConversation({
+      roomKey,
       participantIds: req.body.participantIds || [],
       topic: req.body.topic || 'breakup-support',
     });
@@ -25,7 +30,24 @@ async function getMessages(req, res, next) {
 
 async function createMessage(req, res, next) {
   try {
-    const message = await SupportRepository.createMessage(req.body);
+    const senderAlias = req.user?.alias || req.body.senderAlias || 'Anonymous';
+    const conversationId = req.user?.conversationId || req.body.conversationId;
+    const body = String(req.body.body || '').trim();
+
+    if (!conversationId) {
+      return res.status(400).json({ message: 'conversationId is required' });
+    }
+
+    if (!body) {
+      return res.status(400).json({ message: 'body is required' });
+    }
+
+    const message = await SupportRepository.createMessage({
+      conversationId,
+      senderAlias,
+      body,
+    });
+
     res.status(201).json({ item: message });
   } catch (error) {
     next(error);
