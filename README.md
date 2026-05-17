@@ -42,3 +42,6 @@ npm run build
 Copy the example files:
 - `backend/.env.example` → `backend/.env`
 - `frontend/.env.example` → `frontend/.env.local`
+
+## Deployment
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for Vercel + Render/Railway setup, MongoDB Atlas guidance, and smoke tests.
