@@ -108,6 +108,23 @@ export default function Home() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const stored = window.localStorage.getItem("heart-haven-support-session");
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored) as ConversationSession;
+      if (parsed?.token && parsed?.conversationId && parsed?.alias) {
+        setSupportState(parsed);
+        setSupportAlias(parsed.alias);
+      }
+    } catch {
+      window.localStorage.removeItem("heart-haven-support-session");
+    }
+  }, []);
+
+  useEffect(() => {
     let alive = true;
 
     async function bootstrap() {
@@ -192,6 +209,31 @@ export default function Home() {
     return () => {
       socket.disconnect();
       socketRef.current = null;
+    };
+  }, [supportState?.token, supportState?.conversationId]);
+
+  useEffect(() => {
+    if (!supportState?.token || !supportState.conversationId) return;
+
+    let alive = true;
+    fetchJson<{ items: SupportMessage[] }>(`/api/support/conversations/${supportState.conversationId}/messages`, {
+      headers: {
+        Authorization: `Bearer ${supportState.token}`,
+      },
+    })
+      .then((response) => {
+        if (alive) {
+          setSupportMessages(response.items);
+        }
+      })
+      .catch((error) => {
+        if (alive) {
+          setNotice(error instanceof Error ? error.message : "Could not restore support chat");
+        }
+      });
+
+    return () => {
+      alive = false;
     };
   }, [supportState?.token, supportState?.conversationId]);
 
@@ -280,6 +322,10 @@ export default function Home() {
       };
 
       setSupportState(session);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("heart-haven-support-session", JSON.stringify(session));
+      }
+
       const messageData = await fetchJson<{ items: SupportMessage[] }>(`/api/support/conversations/${conversationId}/messages`, {
         headers: {
           Authorization: `Bearer ${response.token}`,
@@ -583,6 +629,23 @@ export default function Home() {
             <p className="mt-1 break-all text-slate-300">
               {supportState?.conversationId ? `Conversation ${supportState.conversationId}` : "No room joined yet"}
             </p>
+            {supportState ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setSupportState(null);
+                  setSupportMessages([]);
+                  setSupportDraft("");
+                  setSupportStatus("Offline");
+                  if (typeof window !== "undefined") {
+                    window.localStorage.removeItem("heart-haven-support-session");
+                  }
+                }}
+                className="mt-3 rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white"
+              >
+                Leave room
+              </button>
+            ) : null}
           </div>
 
           <div className="mt-4 max-h-72 space-y-3 overflow-y-auto pr-1">
